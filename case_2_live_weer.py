@@ -51,9 +51,7 @@ st.caption(f"Weer laatst ge-update: {live_weer_df['time'][0]}")
 st.subheader("Vandaag in beeld")
 col01, col02, _, _, _, _  = st.columns(6)
 
-# col01.image(f"images/{live_weer_df['image'][0]}.png")
-
-col01.image(f"images/mist.png")
+col01.image(f"{live_weer_df['image'][0]}.png")
 col02.caption(f"Het is nu {live_weer_df['samenv'][0]}")
 
 st.caption(f"{live_weer_df['verw'][0]}")
@@ -103,3 +101,4 @@ col7.metric(
     delta_color="off",
     border=True
 )
+
