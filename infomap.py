@@ -21,8 +21,7 @@ def request_data_location(location='Amsterdam', key=API_KEY):
     return live_weer_df
 
 #VARIABLES
-url = 'https://www.webuildinternet.com/articles/2015-07-19-geojson-data-of-the-netherlands/townships.geojson'
-geojson_data = requests.get(url).json()
+geojson_data = requests.get('https://www.webuildinternet.com/articles/2015-07-19-geojson-data-of-the-netherlands/townships.geojson').json()
 
 pnamen = pd.read_csv('Plaatsnamen.csv',sep=';')
 matches = pd.DataFrame(sorted([x['properties']['name'] for x in geojson_data['features']]))
@@ -49,7 +48,7 @@ for x in range(len(pnamen)):
 #MAP
 # Dit plot gebruikt dorpen/steden die zowel in de geojson als in de KNMI plaatsnamenlijst terug kwamen, vandaar de gelimiteerde selectie
 df = pnamen
-#tering buttons werken niet kijk hier later naar idk man
+#tering buttons werken niet kijk hier later naar idk man. btw bedoeling is meer buttons voor voornoemde data uit cols
 button1 = dict(method= 'update',
                label='temp',
                args=[
@@ -62,8 +61,6 @@ button2 = dict(method= 'update',
                     {"z": [df['gtemp']]},
                     {"hover_name":'gtemp'},
                     {"coloraxis.colorscale": "temps"}])
-
-
 
 fig = px.choropleth_map(
     df,
