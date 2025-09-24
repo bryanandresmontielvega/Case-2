@@ -38,7 +38,7 @@ pnamen = pnamen.groupby('Provincie', as_index=False).head(4).reset_index(drop=Tr
 
 pnamen[['temp','gtemp','verw','samenv','windr']] = 0
 for x in range(len(pnamen)):
-    a= pnamen.loc[x,'Plaatsnaam']
+    a= pnamen.at[x,'Plaatsnaam']
     data = request_data_location(location=a)
     pnamen.at[x,'temp'] = data.temp
     pnamen.at[x,'gtemp'] = data.gtemp
