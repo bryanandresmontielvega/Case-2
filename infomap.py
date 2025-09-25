@@ -21,7 +21,10 @@ def request_data_location(location='Amsterdam', key=API_KEY):
     return live_weer_df
 
 #VARIABLES
-geojson_data = requests.get('https://www.webuildinternet.com/articles/2015-07-19-geojson-data-of-the-netherlands/townships.geojson').json()
+url = 'https://www.webuildinternet.com/articles/2015-07-19-geojson-data-of-the-netherlands/townships.geojson'
+url2 = 'https://service.pdok.nl/cbs/gebiedsindelingen/1995/wfs/v1_0?request=GetFeature&service=WFS&version=1.1.0&outputFormat=application%2Fjson%3B%20subtype%3Dgeojson&typeName=gebiedsindelingen:provincie_gegeneraliseerd'
+geojson_prov = requests.get(url2).json()
+geojson_data = requests.get(url).json()
 
 pnamen = pd.read_csv('Plaatsnamen.csv',sep=';')
 matches = pd.DataFrame(sorted([x['properties']['name'] for x in geojson_data['features']]))
@@ -33,59 +36,68 @@ for i in range(len(pnamen)):
     pnamen['Longitude'][i] = pnamen['Longitude'][i][0]+'.'+''.join(pnamen['Longitude'][i][1:])
     pnamen['Plaatsnaam'][i] = pnamen['Plaatsnaam'][i].replace("'",'')
 pnamen[['Latitude','Longitude']] = pnamen[['Latitude','Longitude']].astype(float)
-pnamen = pnamen.groupby('Provincie', as_index=False).head(4).reset_index(drop=True)
+pnamen = pnamen.drop_duplicates(subset=['Plaatsnaam'],keep=False).groupby('Provincie', as_index=False).head(10).reset_index(drop=True)
 
-pnamen[['temp','gtemp','verw','samenv','windr']] = 0
+pnamen[['temp','gtemp','samenv','windr']] = 0
 for x in range(len(pnamen)):
-    a= pnamen.at[x,'Plaatsnaam']
+    a= pnamen.loc[x,'Plaatsnaam']
     data = request_data_location(location=a)
-    pnamen.at[x,'temp'] = data.temp
-    pnamen.at[x,'gtemp'] = data.gtemp
-    pnamen.at[x,'verw'] = data.verw
-    pnamen.at[x,'samenv'] = data.samenv
-    pnamen.at[x,'windr'] = data.windr
+    pnamen['temp'][x] = data['temp']
+    pnamen['gtemp'][x] = data['gtemp']
+    pnamen['samenv'][x] = data['samenv']
+    pnamen['windr'][x] = data['windr']
 
 #MAP
 # Dit plot gebruikt dorpen/steden die zowel in de geojson als in de KNMI plaatsnamenlijst terug kwamen, vandaar de gelimiteerde selectie
 df = pnamen
-#tering buttons werken niet kijk hier later naar idk man. btw bedoeling is meer buttons voor voornoemde data uit cols
-button1 = dict(method= 'update',
-               label='temp',
-               args=[
-                    {"z": [df['temp']]},
-                    {"hover_name":'temp'},
-                    {"coloraxis.colorscale": "redblue"}])
-button2 = dict(method= 'update',
-               label='gtemp',
-               args=[
-                    {"z": [df['gtemp']]},
-                    {"hover_name":'gtemp'},
-                    {"coloraxis.colorscale": "temps"}])
+button_dict = {}
+provincie = {}
+for p in df['Provincie'].unique():
+    provincie[p] = df.loc[df['Provincie'] == p, :]
 
-fig = px.choropleth_map(
+fig = px.choropleth_mapbox(
     df,
     geojson=geojson_data,
     locations='Plaatsnaam',  
     featureidkey = 'properties.name',
     color='temp',
     color_continuous_scale='temps',
+    hover_name="Plaatsnaam",
+    hover_data=['Provincie','temp','gtemp','samenv','windr'],
+    zoom=5.8,
+    center={"lat": 52.092876, "lon": 5.104480},
     title='Verdeling van API data onder Nederlandse dropen en steden',
-    map_style="light",
-    
 )
-fig.update_geos(fitbounds="locations", visible=True,resolution=50,)
-fig.update_layout(margin={"r":0,"t":40,"l":0,"b":0},
-                  map={"zoom":5.8,
-                  "center":{"lat": 52.092876, "lon": 5.104480}},
-                  updatemenus=[dict(active=0,
-                                    type='buttons',
-                                    direction='right',
-                                    buttons=[button1, button2],
-                                    pad={"r": 10, "t": 10},
-                                    showactive=True, 
-                                    x=0.1,
-                                    xanchor="left",
-                                    y=1.1,
-                                    yanchor="bottom")])
 
-fig.show()
+buttons = [dict(label="Nederland",
+                method="relayout",
+                args=[{"mapbox.center": {"lat": 52.092876, "lon": 5.104480},
+                       "title.text": "Nederland",
+                       "mapbox.zoom":5.8}]
+        )]
+for p in provincie:
+    lat = provincie[p]['Latitude'].median()
+    lon = provincie[p]['Longitude'].median()
+    buttons.append(
+        dict(label=p,
+             method="relayout",
+             args=[{"mapbox.center": {"lat": lat, "lon": lon},
+                    "title.text": p,
+                    "mapbox.zoom":7.5}]))
+
+fig.update_layout(
+    updatemenus=[
+        dict(active=0,
+            buttons=buttons,
+            x=0.5,y=1.09,
+            xanchor="left",
+            yanchor="top")],
+    title={"text":"Select Provincie",
+                "y":0.96,"x":0.05,
+                "xanchor":"left",
+                "yanchor":"top"},
+    margin={"r": 0, "t": 50, "l": 0, "b": 0},
+    mapbox_style="carto-positron")
+fig.update_geos(fitbounds="locations", visible=True,resolution=50,)
+
+fig.show(renderer="notebook")
