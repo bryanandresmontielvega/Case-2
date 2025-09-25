@@ -36,7 +36,7 @@ for i in range(len(pnamen)):
     pnamen['Longitude'][i] = pnamen['Longitude'][i][0]+'.'+''.join(pnamen['Longitude'][i][1:])
     pnamen['Plaatsnaam'][i] = pnamen['Plaatsnaam'][i].replace("'",'')
 pnamen[['Latitude','Longitude']] = pnamen[['Latitude','Longitude']].astype(float)
-pnamen = pnamen.drop_duplicates(subset=['Plaatsnaam'],keep=False).groupby('Provincie', as_index=False).head(10).reset_index(drop=True)
+pnamen = pnamen.drop_duplicates(subset=['Plaatsnaam'],keep=False).groupby('Provincie', as_index=False).head(2).reset_index(drop=True)
 
 pnamen[['temp','gtemp','samenv','windr']] = 0
 for x in range(len(pnamen)):
