@@ -100,4 +100,4 @@ fig.update_layout(
     mapbox_style="carto-positron")
 fig.update_geos(fitbounds="locations", visible=True,resolution=50,)
 
-fig.show(renderer="notebook")
+st.plotly_chart(fig)
